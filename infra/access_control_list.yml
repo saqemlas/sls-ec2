@@ -1,0 +1,136 @@
+Resources:
+  
+  PublicAcl:
+    Type: AWS::EC2::NetworkAcl
+    Properties: 
+      VpcId: !Ref VPC
+  
+  PublicAclHttpInboundRule:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      NetworkAclId: !Ref PublicAcl
+      RuleNumber: 100
+      Protocol: 6
+      Egress: false
+      RuleAction: allow
+      CidrBlock: 0.0.0.0/0
+      PortRange:
+        From: 80
+        To: 80
+  
+  PublicAclHttpsInboundRule:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      NetworkAclId: !Ref PublicAcl
+      RuleNumber: 200
+      Protocol: 6
+      Egress: false
+      RuleAction: allow
+      CidrBlock: 0.0.0.0/0
+      PortRange:
+        From: 443
+        To: 443
+  
+  PublicAclSshInboundRule:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      NetworkAclId: !Ref PublicAcl
+      RuleNumber: 300
+      Protocol: 6
+      Egress: false
+      RuleAction: allow
+      CidrBlock: ${self:custom.ip}
+      PortRange:
+        From: 22
+        To: 22
+  
+  PublicAclEphemeralPortsInboundRule:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      NetworkAclId: !Ref PublicAcl
+      RuleNumber: 400
+      Protocol: 6
+      Egress: false
+      RuleAction: allow
+      CidrBlock: 0.0.0.0/0
+      PortRange:
+        From: 1024
+        To: 65535
+  
+  PublicAclEphemeralPortsUdpInboundRule:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      NetworkAclId: !Ref PublicAcl
+      RuleNumber: 410
+      Protocol: 17
+      Egress: false
+      RuleAction: allow
+      CidrBlock: 0.0.0.0/0
+      PortRange:
+        From: 1024
+        To: 65535
+
+  PublicAclHttpOutboundRule:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      NetworkAclId: !Ref PublicAcl
+      RuleNumber: 100
+      Protocol: 6
+      Egress: true
+      RuleAction: allow
+      CidrBlock: 0.0.0.0/0
+      PortRange:
+        From: 80
+        To: 80
+
+  PublicAclHttpsOutboundRule:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      NetworkAclId: !Ref PublicAcl
+      RuleNumber: 200
+      Protocol: 6
+      Egress: true
+      RuleAction: allow
+      CidrBlock: 0.0.0.0/0
+      PortRange:
+        From: 443
+        To: 443
+
+  PublicAclSshOutboundRule:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      NetworkAclId: !Ref PublicAcl
+      RuleNumber: 300
+      Protocol: 6
+      Egress: true
+      RuleAction: allow
+      CidrBlock: ${self:custom.ip}
+      PortRange:
+        From: 22
+        To: 22
+
+  PublicAclEphemeralPortsOutboundRule:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      NetworkAclId: !Ref PublicAcl
+      RuleNumber: 400
+      Protocol: 6
+      Egress: true
+      RuleAction: allow
+      CidrBlock: 0.0.0.0/0
+      PortRange:
+        From: 1024
+        To: 65535
+
+  PublicAclEphemeralPortsUdpOutboundRule:
+    Type: AWS::EC2::NetworkAclEntry
+    Properties:
+      NetworkAclId: !Ref PublicAcl
+      RuleNumber: 410
+      Protocol: 17
+      Egress: true
+      RuleAction: allow
+      CidrBlock: 0.0.0.0/0
+      PortRange:
+        From: 1024
+        To: 65535

@@ -1,0 +1,29 @@
+{
+  "name": "@aws-template/ec2",
+  "version": "1.0.0",
+  "license": "UNLICENSED",
+  "scripts": {
+    "clean": "yarn run clean:server && rimraf node_modules .serverless",
+    "clean:server": "cd server && yarn run clean",
+    "postinstall": "cd server && yarn run ci",
+    "checktsc": "tsc --noEmit",
+    "bundle": "cd server && yarn run bundle",
+    "package": "f() { cd server && zip -r $1.zip package.json yarn.lock .env.prod build; }; f",
+    "upload": "f() { cd server && AWS_PAGER='' && aws s3 cp $1.zip \"s3://$2\"; }; f",
+    "createS3": "bash scripts/create_s3_bucket.sh",
+    "start": "cd server && yarn run start:dev",
+    "deploy": "yarn run serverless deploy",
+    "remove": "yarn run serverless remove && yarn run remove:bucket",
+    "remove:bucket": "f() { AWS_PAGER='' && aws s3api delete-bucket --bucket $1; }; f"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "@types/node": "18.16.3",
+    "esbuild": "0.17.18",
+    "serverless": "3.30.1",
+    "serverless-s3-cleaner": "2.0.2",
+    "serverless-scriptable-plugin": "1.3.0",
+    "ts-node": "10.9.1",
+    "typescript": "5.0.4"
+  }
+}

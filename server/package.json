@@ -1,0 +1,24 @@
+{
+  "name": "@aws-template/ec2-server",
+  "version": "1.0.0",
+  "license": "UNLICENSED",
+  "scripts": {
+    "clean": "rimraf node_modules yarn.lock build ingest_app.zip",
+    "ci": "yarn install --frozen-lockfile --production=true",
+    "bundle": "esbuild src/index.ts --bundle --minify --sourcemap --platform=node --target=es2020 --outdir=build",
+    "start:dev": "DOTENV_CONFIG_PATH=.env.local PORT=80 ts-node src/index.ts",
+    "start:prod": "DOTENV_CONFIG_PATH=.env.prod PORT=80 node -r dotenv/config build/index.js"
+  },
+  "dependencies": {
+    "cors": "2.8.5",
+    "dotenv": "16.0.3",
+    "express": "4.17.1",
+    "winston": "3.8.2",
+    "winston-daily-rotate-file": "4.7.1"
+  },
+  "devDependencies": {
+    "@types/cors": "2.8.12",
+    "@types/express": "4.17.13",
+    "@types/node": "18.16.3"
+  }
+}

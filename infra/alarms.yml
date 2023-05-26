@@ -1,0 +1,174 @@
+Resources:
+
+  CPUAlarmWARNING: 
+    DependsOn: SnsTopic
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: !Sub "${self:custom.baseName}-server - Instance - High CPU Usage 90%"
+      AlarmActions:
+      - !Ref SnsTopic
+      OKActions:
+      - !Ref SnsTopic
+      MetricName: CPUUtilization
+      Namespace: AWS/EC2
+      Statistic: Average
+      Period: '900'
+      EvaluationPeriods: '1'
+      Threshold: '90'
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      Dimensions:
+      - Name: InstanceId
+        Value: !Ref Instance
+
+  CPUAlarmCRITICAL:
+    DependsOn: SnsTopic
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: !Sub "${self:custom.baseName}-server - Instance - High CPU Usage 95%"
+      AlarmActions:
+      - !Ref SnsTopic
+      OKActions:
+      - !Ref SnsTopic
+      MetricName: CPUUtilization
+      Namespace: AWS/EC2
+      Statistic: Average
+      Period: '900' 
+      EvaluationPeriods: '2'
+      Threshold: '95'
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      Dimensions:
+      - Name: InstanceId
+        Value: !Ref Instance
+
+  MemoryAlarmWARNING:
+    DependsOn: SnsTopic
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: !Sub "${self:custom.baseName}-server - Instance - High Memory Usage 90%"
+      AlarmActions:
+      - !Ref SnsTopic
+      OKActions:
+      - !Ref SnsTopic
+      MetricName: mem_used_percent
+      Namespace: AWS/EC2
+      Statistic: Average
+      Period: '900'
+      EvaluationPeriods: '1'
+      Threshold: '90'
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      Dimensions:
+      - Name: InstanceId
+        Value: !Ref Instance
+
+  MemoryAlarmCRITICAL:
+    DependsOn: SnsTopic
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: !Sub "${self:custom.baseName}-server - Instance - High Memory Usage 95%"
+      AlarmActions:
+      - !Ref SnsTopic
+      OKActions:
+      - !Ref SnsTopic
+      MetricName: mem_used_percent
+      Namespace: AWS/EC2
+      Statistic: Average
+      Period: '900' 
+      EvaluationPeriods: '2'
+      Threshold: '95'
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      Dimensions:
+      - Name: InstanceId
+        Value: !Ref Instance
+
+  SystemStatusAlarmCRITICAL:
+    DependsOn: SnsTopic
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: !Sub "${self:custom.baseName}-server - Instance - instance recovery process has been triggered because of failed System Status Check"
+      AlarmActions:
+      - !Sub arn:aws:automate:${self:provider.region}:ec2:recover
+      - !Ref SnsTopic
+      OKActions:
+      - !Ref SnsTopic
+      Namespace: AWS/EC2
+      MetricName: StatusCheckFailed_System
+      Statistic: Minimum
+      Period: '60'
+      EvaluationPeriods: '2'
+      ComparisonOperator: GreaterThanThreshold
+      Threshold: '0'
+      Dimensions:
+      - Name: InstanceId
+        Value: !Ref Instance
+
+  InstanceStatusAlarmCRITICAL:
+    DependsOn: SnsTopic
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: !Sub "${self:custom.baseName}-server - Instance - Instance Status Check Failed - please investigate. Troubleshooting: https://goo.gl/Ea27Gd"
+      AlarmActions:
+      - !Ref SnsTopic
+      OKActions:
+      - !Ref SnsTopic
+      Namespace: AWS/EC2
+      MetricName: StatusCheckFailed_Instance
+      Statistic: Minimum
+      Period: '60'
+      EvaluationPeriods: '3'
+      ComparisonOperator: GreaterThanThreshold
+      Threshold: '0'
+      Dimensions:
+      - Name: InstanceId
+        Value: !Ref Instance
+
+  DiskSpaceAlarmWARNING:
+    DependsOn: SnsTopic
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: !Sub "${self:custom.baseName}-server - Instance - over 90% of xvda1 volume space is in use"
+      AlarmActions:
+      - !Ref SnsTopic
+      OKActions:
+      - !Ref SnsTopic
+      MetricName: disk_used_percent
+      Namespace: AWS/EC2
+      Statistic: Average
+      Period: '300'
+      EvaluationPeriods: '1'
+      Threshold: '90'
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      Dimensions:
+      - Name: InstanceId
+        Value: !Ref Instance
+      - Name: device
+        Value: xvda1
+      - Name: path
+        Value: / # dev/xvda
+      - Name: fstype
+        Value: ext4
+
+  DiskSpaceAlarmCRITICAL:
+    DependsOn: SnsTopic
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: !Sub "${self:custom.baseName}-server - Instance - over 95% of xvda1 volume space is in use"
+      AlarmActions:
+      - !Ref SnsTopic
+      OKActions:
+      - !Ref SnsTopic
+      MetricName: disk_used_percent
+      Namespace: AWS/EC2
+      Statistic: Average
+      Period: '300'
+      EvaluationPeriods: '1'
+      Threshold: '95'
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      Dimensions:
+      - Name: InstanceId
+        Value: !Ref Instance
+      - Name: device
+        Value: xvda1
+      - Name: path
+        Value: / # dev/xvda
+      - Name: fstype
+        Value: ext4

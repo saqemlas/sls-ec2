@@ -1,0 +1,8 @@
+Resources:
+
+  InstanceLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/ec2/${self:custom.baseName}-server
+      RetentionInDays: 60
+    DeletionPolicy: Delete

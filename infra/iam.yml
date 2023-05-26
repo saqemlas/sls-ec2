@@ -1,0 +1,57 @@
+Resources:
+
+  InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles:
+        - !Ref InstanceRole
+
+  InstanceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: ${self:custom.baseName}-ec2-role
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy
+      Policies:
+        - PolicyName: ${self:custom.baseName}-ec2-policy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                Resource:
+                  - arn:aws:s3:::${self:custom.deploymentBucket}/${self:custom.zipName}.zip
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                  - logs:DescribeLogStreams
+                  - logs:PutRetentionPolicy
+                Resource:
+                  - !GetAtt InstanceLogGroup.Arn
+              - Effect: Allow
+                Action:
+                  - cloudwatch:PutMetricData
+                Resource: "*"
+  
+  InstanceBucketAccessPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: ${self:custom.deploymentBucket}
+      PolicyDocument:
+        Statement:
+          - Effect: Allow
+            Action: s3:GetObject
+            Principal:
+              AWS: 
+                - !GetAtt InstanceRole.Arn
+            Resource: 
+              - arn:aws:s3:::${self:custom.deploymentBucket}/${self:custom.zipName}.zip

@@ -1,0 +1,251 @@
+Resources:
+
+  Instance:
+    Type: AWS::EC2::Instance
+    CreationPolicy:
+      ResourceSignal:
+        Count: 1
+        Timeout: "PT10M"     
+    Metadata:
+      AWS::CloudFormation::Init:
+        configSets:
+          default:
+            - cfn_hup
+            - cloudwatch_agent
+            - install_node
+            - application
+            - restart_cloudwatch_agent
+          update:
+            - install_node
+            - application
+            - cloudwatch_agent
+            - restart_cloudwatch_agent
+        cfn_hup:
+          files:
+             '/etc/cfn/cfn-hup.conf':
+               content: !Sub |
+                 [main]
+                 stack=${AWS::StackId}
+                 region=${self:provider.region}
+                 interval=1
+               mode: '000400'
+               owner: root
+               group: root
+             '/etc/cfn/hooks.d/amazon-cloudwatch-agent-auto-reloader.conf':
+               content: !Sub |
+                 [cfn-auto-reloader-hook]
+                 triggers=post.update
+                 path=Resources.Instance.Metadata.AWS::CloudFormation::Init.cloudwatch_agent
+                 action=/opt/aws/bin/cfn-init -v --stack ${AWS::StackId} --resource Instance --region ${self:provider.region} --configsets update
+                 runas=root
+               mode: '000400'
+               owner: root
+               group: root
+             "/lib/systemd/system/cfn-hup.service":
+                content: !Sub |
+                  [Unit]
+                  Description=cfn-hup daemon
+                  [Service]
+                  Type=simple
+                  ExecStart=/opt/aws/bin/cfn-hup
+                  Restart=always
+                  [Install]
+                  WantedBy=multi-user.target
+          commands:
+            01_enable_cfn_hup:
+              command: !Sub |
+                systemctl enable cfn-hup.service
+            02_start_cfn_hup:
+              command: !Sub |
+                systemctl start cfn-hup.service         
+        cloudwatch_agent:
+          files:
+            '/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json':
+              content: !Sub |
+                {
+                  "agent":{
+                      "metrics_collection_interval":60,
+                      "run_as_user":"root",
+                      "region":"${self:provider.region}",
+                      "debug":false
+                  },
+                  "metrics":{
+                      "namespace": "EC2",
+                      "append_dimensions":{
+                        "AutoScalingGroupName":"${!aws:AutoScalingGroupName}",
+                        "ImageId":"${!aws:ImageId}",
+                        "InstanceId":"${!aws:InstanceId}",
+                        "InstanceType":"${!aws:InstanceType}"
+                      },
+                      "metrics_collected":{
+                        "cpu":{
+                            "measurement":[
+                              "cpu_usage_idle",
+                              "cpu_usage_active"
+                            ],
+                            "totalcpu":false
+                        },
+                        "disk":{
+                            "measurement":[
+                              "disk_used_percent"
+                            ],
+                            "drop_device":false
+                        },
+                        "mem":{
+                            "measurement":[
+                              "mem_used_percent",
+                              "mem_cached"
+                            ]
+                        },
+                        "net":{
+                            "measurement":[
+                              "bytes_sent",
+                              "bytes_recv",
+                              "drop_in",
+                              "drop_out",
+                              "err_in",
+                              "err_out",
+                              "packets_sent",
+                              "packets_recv"
+                            ],
+                            "resources":[
+                              "*"
+                            ]
+                        },
+                        "processes":{
+                            "measurement":[
+                              "running",
+                              "sleeping",
+                              "dead"
+                            ]
+                        },
+                        "swap":{
+                            "measurement":[
+                              "swap_used_percent"
+                            ]
+                        }
+                      }
+                  },
+                  "logs":{
+                      "logs_collected":{
+                        "files":{
+                            "collect_list":[
+                              {
+                                  "auto_removal":true,
+                                  "file_path":"/opt/aws/amazon-cloudwatch-agent/logs/amazon-cloudwatch-agent.log",
+                                  "log_group_name":"/aws/ec2/${self:custom.baseName}-server",
+                                  "log_stream_name":"{instance_id}-cloudwatch-agent",
+                                  "timestamp_format": "%Y-%m-%d %H:%M:%S,%f",
+                                  "timezone":"UTC"
+                              },
+                              {
+                                  "auto_removal":true,
+                                  "file_path":"/var/log/cfn-init.log",
+                                  "log_group_name":"/aws/ec2/${self:custom.baseName}-server",
+                                  "log_stream_name":"{instance_id}-cfn-init",
+                                  "timestamp_format": "%Y-%m-%d %H:%M:%S,%f",
+                                  "timezone":"UTC"
+                              },
+                              {
+                                  "auto_removal":true,
+                                  "file_path":"/var/log/cloud-init.log",
+                                  "log_group_name":"/aws/ec2/${self:custom.baseName}-server",
+                                  "log_stream_name":"{instance_id}-cloud-init",
+                                  "timestamp_format": "%Y-%m-%d %H:%M:%S,%f",
+                                  "timezone":"UTC"
+                              },
+                              {
+                                  "auto_removal":true,
+                                  "file_path":"/var/log/cloud-init-output.log",
+                                  "log_group_name":"/aws/ec2/${self:custom.baseName}-server",
+                                  "log_stream_name":"{instance_id}cloud-init-output",
+                                  "timestamp_format": "%Y-%m-%d %H:%M:%S,%f",
+                                  "timezone":"UTC"
+                              },
+                              {
+                                  "auto_removal":true,
+                                  "file_path":"/var/log/nodejs/application-*.log",
+                                  "log_group_name":"/aws/ec2/${self:custom.baseName}-server",
+                                  "log_stream_name":"{instance_id}-application",
+                                  "timestamp_format": "%Y-%m-%d %H:%M:%S,%f",
+                                  "timezone":"UTC"
+                              }
+                            ]
+                        }
+                      },
+                      "force_flush_interval":15
+                  }
+                }
+        restart_cloudwatch_agent:
+          commands:
+            01_stop_service:
+              command: /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a stop
+            02_start_service:
+              command: /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -c file:/opt/aws/amazon-cloudwatch-agent/etc/amazon-cloudwatch-agent.json -s
+        install_node:
+          commands:
+            01_node:
+               command: "curl --silent --location https://rpm.nodesource.com/setup_18.x | sudo bash -"
+            02_node:
+               command: "sudo yum install -y nodejs npm"
+            03_node:
+               command: "sudo npm install yarn -g"
+            04_node:
+               command: "echo \"Node version $(node -v)\" && echo \"NPM version $(npm -v)\" && echo \"Yarn version $(yarn -v)\""
+        application:
+          commands:
+            01_app:
+               command: "aws s3 cp \"s3://${self:custom.deploymentBucket}/${self:custom.zipName}.zip\" ."
+               cwd: "/home/ec2-user"
+            02_app:
+               command: "unzip ${self:custom.zipName}.zip"
+               cwd: "/home/ec2-user"
+            03_app:
+               command: "sudo yarn run ci"
+               cwd: "/home/ec2-user"
+    Properties:
+      ImageId: ${self:custom.baseAmi}
+      InstanceType: ${self:custom.instanceType}
+      IamInstanceProfile: !Ref InstanceProfile
+      InstanceInitiatedShutdownBehavior: stop
+      PropagateTagsToVolumeOnCreation: true
+      SourceDestCheck: true
+      Monitoring: false
+      KeyName: !Ref KeyPair
+      UserData:
+        "Fn::Base64": 
+          !Sub |
+            #!/bin/bash -xe
+
+            yum update -y
+
+            # Get latest CloudFormation package
+            yum update -y aws-cfn-bootstrap
+
+            # Download cloudwatch agent
+            rpm -Uvh https://s3.amazonaws.com/amazoncloudwatch-agent/amazon_linux/arm64/latest/amazon-cloudwatch-agent.rpm
+
+            # Start cfn-init to Install all Metadata content (packages, sources, files, commands and services )
+            /opt/aws/bin/cfn-init -v --stack ${AWS::StackId} --resource Instance --configsets default --region ${self:provider.region}
+            
+            # Signal the status from cfn-init 
+            /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackId} --resource Instance --region ${self:provider.region}
+
+            # Check cloudwatch agent status
+            /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -m ec2 -a status
+
+            # Start app
+            cd home/ec2-user && yarn run start:prod
+
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: true
+          DeleteOnTermination: true
+          DeviceIndex: "0"
+          GroupSet:
+            - !Ref SecurityGroup
+          SubnetId: !Ref PublicSubnet
+      Tags:
+        - Key: Name
+          Value: ${self:custom.baseName}-server
+        - Key: Service
+          Value: ${self:service}-server

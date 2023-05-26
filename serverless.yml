@@ -1,0 +1,66 @@
+service: ec2
+
+plugins:
+  - serverless-s3-cleaner
+  - serverless-scriptable-plugin
+
+custom:
+  baseName: ${self:service}-${self:provider.stage}
+
+  zipName: ec2_app
+
+  baseAmi: ${ssm:/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-arm64}
+  instanceType: t4g.micro
+
+  publicKey: ${file(./infra/files/${self:custom.zipName}.pub)}
+
+  email: ''
+  ip: ''
+  
+  vpcCidr: '' # X.0.0.0/16
+  subnetCidr: '' # X.0.1.0/24
+
+  deploymentBucket: ${self:custom.baseName}-code-bucket
+
+  serverless-s3-cleaner:
+    buckets:
+      - ${self:custom.deploymentBucket}
+      - ${cf:${self:custom.baseName}.ServerlessDeploymentBucketName, ''}
+
+  scriptable:
+    hooks:
+      aws:deploy:deploy:createStack: 
+        - yarn run createS3 --region ${self:provider.region} --bucket ${self:custom.deploymentBucket}
+      before:aws:deploy:deploy:updateStack: 
+        - yarn run bundle
+        - yarn run package ${self:custom.zipName}
+        - yarn run upload ${self:custom.zipName} ${self:custom.deploymentBucket}
+      after:remove:remove:
+        - yarn run remove:bucket ${self:custom.deploymentBucket}
+
+provider:
+  name: aws
+  region: ${opt:region, 'eu-west-1'}
+  stage: ${opt:stage, 'dev'}
+  stackName: ${self:custom.baseName}
+  stackTags: 
+    stage: ${self:provider.stage}
+    stack: ${self:custom.baseName}
+    service: ${self:service}
+  deploymentBucket:
+    blockPublicAccess: true
+
+resources:
+  - ${file(./infra/vpc.yml)}
+  - ${file(./infra/access_control_list.yml)}
+  - ${file(./infra/subnets.yml)}
+  - ${file(./infra/internet_gateway.yml)}
+  - ${file(./infra/routetable.yml)}
+  - ${file(./infra/security_group.yml)}
+  - ${file(./infra/ssh.yml)}
+  - ${file(./infra/elastic_ip.yml)}
+  - ${file(./infra/sns.yml)}
+  - ${file(./infra/iam.yml)}
+  - ${file(./infra/logs.yml)}
+  - ${file(./infra/compute.yml)}
+  - ${file(./infra/alarms.yml)}

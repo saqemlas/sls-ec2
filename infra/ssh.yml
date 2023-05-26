@@ -1,0 +1,7 @@
+Resources:
+
+  KeyPair:
+    Type: AWS::EC2::KeyPair
+    Properties: 
+      KeyName: ${self:custom.baseName}-keyname
+      PublicKeyMaterial: ${self:custom.publicKey}

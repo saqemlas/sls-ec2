@@ -1,0 +1,10 @@
+Resources:
+
+  SnsTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      DisplayName:  ${self:custom.baseName}-alarm
+      TopicName: ${self:custom.baseName}-alarm-topic-${self:provider.region}
+      Subscription:
+        - Protocol: email
+          Endpoint: ${self:custom.email}

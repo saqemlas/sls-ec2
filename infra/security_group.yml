@@ -1,0 +1,12 @@
+Resources:
+
+  SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      VpcId: !Ref VPC
+      GroupDescription: Allow all traffic on all ports
+      SecurityGroupIngress:
+        - FromPort: 0
+          ToPort: 65535
+          CidrIp: 0.0.0.0/0
+          IpProtocol: -1

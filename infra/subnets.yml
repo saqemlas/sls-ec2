@@ -1,0 +1,9 @@
+Resources:
+  
+  PublicSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: ${self:provider.region}a
+      CidrBlock: ${self:custom.subnetCidr}
+      MapPublicIpOnLaunch: true
+      VpcId: !Ref VPC
