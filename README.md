@@ -36,8 +36,10 @@ yarn run deploy
 
 ### SSH into Ingest Server
 ```bash
-bash scripts/get_ssh_command.sh --path ~/.ssh/ec2_app
+bash scripts/get_ssh_command.sh --path ~/.ssh/ec2_app --service <service-name>
 ```
+
+- service is the stack service name with hyphened `server`, ie example-server
 
 - Copy the output and ssh into instance.
 

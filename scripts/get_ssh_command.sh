@@ -7,6 +7,10 @@ while :; do
     export PATH=${2}
     shift
     ;;
+  --service)
+    export SERVICE=${2}
+    shift
+    ;;
   *) break ;;
   esac
   shift
@@ -18,11 +22,10 @@ die() {
 }
 
 [[ -z "${PATH-}" ]] && die "path to private ssh key is required"
+[[ -z "${SERVICE-}" ]] && die "stack service is required"
 
 # Stop aws cli output
 export AWS_PAGER=""
-
-Service="ingest-server"
 
 export PUBLIC_DNS=$(/usr/local/bin/aws ec2 describe-instances --filters "Name=tag:Service,Values=$Service" --filters "Name=instance-state-name,Values=running" --query 'Reservations[*].Instances[*].PublicDnsName' --output text)
 
